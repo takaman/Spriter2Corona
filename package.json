@@ -1,0 +1,30 @@
+{
+  "name": "spriter2corona",
+  "version": "0.0.1",
+  "description": "A Corona (coronalabs.com) plugin to use Spriter (brashmonkey.com) based animations",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Liberton/Spriter2Corona.git"
+  },
+  "keywords": [
+    "Corona",
+    "SDK",
+    "Spriter",
+    "Plugin"
+  ],
+  "author": "marcelo@liberton.com.br",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Liberton/Spriter2Corona/issues"
+  },
+  "homepage": "https://github.com/Liberton/Spriter2Corona#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.0",
+    "gulp-luaminify": "0.0.1",
+    "gulp-watch": "^4.3.8"
+  }
+}

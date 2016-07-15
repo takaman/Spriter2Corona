@@ -6,7 +6,7 @@ print(" \n \n \n ")
 -- EXAMPLE OF USAGE
 
 -- import the library
-local S2C = require("source.S2C")
+local S2C = require("dist.Spriter2Corona")
 
 -- create a S2C instance passing the *.scon file path
 local s2c = S2C:new("spriter.scon")
@@ -21,13 +21,13 @@ if(s2c)then
 
     if(animation)then
       -- default speed is 1, - is lower, + is faster
-      animation.speed = 0.5
+      animation:setSpeed(1)
 
       -- play the animation
       animation:play()
 
       -- modify the animation DisplayObject
-      local displayObj = animation.group
+      local displayObj = animation:getDisplayObject()
 
       displayObj.x = display.contentCenterX
       displayObj.y = display.contentCenterY
@@ -36,3 +36,22 @@ if(s2c)then
     end
   end
 end
+
+
+--[[
+
+SpriterObject
+
+  Folder
+    File
+
+  Entity
+    Animation
+      MainlineKey
+        Ref
+
+      Timeline
+        TimelineKey
+          SpriteTimelineKey
+
+]]--

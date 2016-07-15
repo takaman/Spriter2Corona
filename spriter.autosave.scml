@@ -8,23 +8,37 @@
             <mainline>
                 <key id="0">
                     <object_ref id="0" timeline="0" key="0" z_index="0"/>
+                    <object_ref id="1" timeline="1" key="0" z_index="1"/>
                 </key>
-                <key id="1" time="200">
+                <key id="1" time="303">
                     <object_ref id="0" timeline="0" key="1" z_index="0"/>
+                    <object_ref id="1" timeline="1" key="1" z_index="1"/>
                 </key>
-                <key id="2" time="800">
+                <key id="2" time="598">
                     <object_ref id="0" timeline="0" key="2" z_index="0"/>
+                    <object_ref id="1" timeline="1" key="2" z_index="1"/>
                 </key>
             </mainline>
             <timeline id="0" name="placeholder">
                 <key id="0" spin="0">
-                    <object folder="0" file="0" x="-189.89899" y="13.131313"/>
+                    <object folder="0" file="0" x="-233.766234" y="175.324675"/>
                 </key>
-                <key id="1" time="200" spin="0">
-                    <object folder="0" file="0" x="-137.373737" y="11.111111"/>
+                <key id="1" time="303" spin="0">
+                    <object folder="0" file="0" x="161.038961" y="175.324675"/>
                 </key>
-                <key id="2" time="800" spin="0">
-                    <object folder="0" file="0" x="-137.373737" y="11.111111"/>
+                <key id="2" time="598" spin="0">
+                    <object folder="0" file="0" x="193.940636" y="-87.012987"/>
+                </key>
+            </timeline>
+            <timeline id="1" name="placeholder_000">
+                <key id="0" spin="0">
+                    <object folder="0" file="0" x="171.428571" y="-107.792208"/>
+                </key>
+                <key id="1" time="303" spin="0">
+                    <object folder="0" file="0" x="-244.155844" y="-93.506494"/>
+                </key>
+                <key id="2" time="598" spin="0">
+                    <object folder="0" file="0" x="-248.782351" y="165.38225"/>
                 </key>
             </timeline>
         </animation>
