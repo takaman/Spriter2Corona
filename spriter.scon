@@ -19,109 +19,6 @@
 										"timeline": "0",
 										"z_index": "0"
 									}
-								],
-								"time": 200
-							},
-							{
-								"bone_ref": [],
-								"id": 1,
-								"object_ref": [],
-								"time": 368
-							},
-							{
-								"bone_ref": [],
-								"id": 2,
-								"object_ref": [
-									{
-										"id": 0,
-										"key": 1,
-										"timeline": "0",
-										"z_index": "0"
-									}
-								],
-								"time": 697
-							},
-							{
-								"bone_ref": [],
-								"id": 3,
-								"object_ref": [
-									{
-										"id": 0,
-										"key": 2,
-										"timeline": "0",
-										"z_index": "0"
-									}
-								],
-								"time": 796
-							}
-						]
-					},
-					"name": "NewAnimation_001",
-					"timeline": [
-						{
-							"id": 0,
-							"key": [
-								{
-									"id": 0,
-									"object": {
-										"file": 0,
-										"folder": 0,
-										"x": -4,
-										"y": -46
-									},
-									"spin": 0,
-									"time": 200
-								},
-								{
-									"id": 1,
-									"object": {
-										"file": 0,
-										"folder": 0,
-										"x": 143,
-										"y": -50
-									},
-									"spin": 0,
-									"time": 697
-								},
-								{
-									"id": 2,
-									"object": {
-										"file": 0,
-										"folder": 0,
-										"x": -3,
-										"y": 64
-									},
-									"spin": 0,
-									"time": 796
-								}
-							],
-							"name": "placeholder_002"
-						}
-					]
-				},
-				{
-					"gline": [],
-					"id": 1,
-					"interval": 100,
-					"length": 1000,
-					"mainline": {
-						"key": [
-							{
-								"bone_ref": [],
-								"id": 0,
-								"object_ref": [
-									{
-										"id": 0,
-										"key": 0,
-										"timeline": "0",
-										"z_index": "0"
-									},
-									{
-										"id": 1,
-										"key": 2,
-										"timeline": "1",
-										"z_index": "1"
-									}
 								]
 							},
 							{
@@ -130,18 +27,12 @@
 								"object_ref": [
 									{
 										"id": 0,
-										"key": 0,
+										"key": 1,
 										"timeline": "0",
 										"z_index": "0"
-									},
-									{
-										"id": 1,
-										"key": 0,
-										"timeline": "1",
-										"z_index": "1"
 									}
 								],
-								"time": 149
+								"time": 200
 							},
 							{
 								"bone_ref": [],
@@ -149,37 +40,12 @@
 								"object_ref": [
 									{
 										"id": 0,
-										"key": 0,
-										"timeline": "0",
-										"z_index": "0"
-									},
-									{
-										"id": 1,
-										"key": 1,
-										"timeline": "1",
-										"z_index": "1"
-									}
-								],
-								"time": 402
-							},
-							{
-								"bone_ref": [],
-								"id": 3,
-								"object_ref": [
-									{
-										"id": 0,
-										"key": 1,
-										"timeline": "0",
-										"z_index": "0"
-									},
-									{
-										"id": 1,
 										"key": 2,
-										"timeline": "1",
-										"z_index": "1"
+										"timeline": "0",
+										"z_index": "0"
 									}
 								],
-								"time": 696
+								"time": 800
 							}
 						]
 					},
@@ -193,8 +59,8 @@
 									"object": {
 										"file": 0,
 										"folder": 0,
-										"x": -170,
-										"y": 33
+										"x": -189.8989898989899,
+										"y": 13.131313131313131
 									},
 									"spin": 0
 								},
@@ -203,60 +69,32 @@
 									"object": {
 										"file": 0,
 										"folder": 0,
-										"x": 1,
-										"y": 102
+										"x": -137.37373737373738,
+										"y": 11.11111111111111
 									},
 									"spin": 0,
-									"time": 696
-								}
-							],
-							"name": "placeholder"
-						},
-						{
-							"id": 1,
-							"key": [
-								{
-									"id": 0,
-									"object": {
-										"file": 0,
-										"folder": 0,
-										"x": 102,
-										"y": 7
-									},
-									"spin": 0,
-									"time": 149
-								},
-								{
-									"id": 1,
-									"object": {
-										"file": 0,
-										"folder": 0,
-										"x": -51,
-										"y": -81
-									},
-									"spin": 0,
-									"time": 402
+									"time": 200
 								},
 								{
 									"id": 2,
 									"object": {
 										"file": 0,
 										"folder": 0,
-										"x": -0.7792642140468189,
-										"y": -103.73578595317726
+										"x": -137.37373737373738,
+										"y": 11.11111111111111
 									},
 									"spin": 0,
-									"time": 696
+									"time": 800
 								}
 							],
-							"name": "placeholder_000"
+							"name": "placeholder"
 						}
 					]
 				}
 			],
 			"character_map": [],
 			"id": 0,
-			"name": "entity_000",
+			"name": "Character",
 			"obj_info": []
 		}
 	],

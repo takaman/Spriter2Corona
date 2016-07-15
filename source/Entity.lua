@@ -1,6 +1,8 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local Entity = {}
 
-local Animation = require("S2C.Animation")
+local Animation = require(path .. "Animation")
 
 function Entity:new(data, parent)
   local entity = data
@@ -16,6 +18,14 @@ function Entity:new(data, parent)
   end
 
   return entity
+end
+
+function Entity:findAnimationByName(name)
+  for index, animation in pairs(self.animations) do
+    if(animation.name == name)then
+      return animation
+    end
+  end
 end
 
 return Entity

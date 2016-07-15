@@ -1,6 +1,8 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local TimelineKey = {}
 
-local Object = require("S2C.Object")
+local Object = require(path .. "Object")
 
 function TimelineKey:new(data, parent)
   local timelineKey = data
@@ -23,23 +25,25 @@ function TimelineKey:new(data, parent)
 end
 
 function TimelineKey:play()
-  local nextKey = self.parent.keys[self.parent.curKey + 1]
+  local nextKey = self.parent.keys[self.parent.curKey + 1] or self.parent.keys[1]
 
-  if(not nextKey)then
-    nextKey = self.parent.keys[1]
-  end
-
-  transition.to(self.parent.image, {
-    time = nextKey.duration * self.parent.parent.speed,
+  self.transition = transition.to(self.parent.image, {
+    time = nextKey.duration / self.parent.parent.speed,
     x = nextKey.object.x,
     y = nextKey.object.y,
     xScale = nextKey.object.scale_x,
     yScale = nextKey.object.scale_y,
     rotation = nextKey.object.angle,
     onComplete = function()
-      self.parent:next()
+      self.parent:play()
     end
   })
+end
+
+function TimelineKey:stop()
+  transition.cancel(self.transition)
+
+--  self.transition:pause()
 end
 
 return TimelineKey

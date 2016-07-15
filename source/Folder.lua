@@ -1,6 +1,8 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local Folder = {}
 
-local File = require("S2C.File")
+local File = require(path .. "File")
 
 function Folder:new(data)
   local folder = data

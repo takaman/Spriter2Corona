@@ -1,6 +1,8 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local Mainline = {}
 
-local MainlineKey = require("S2C.MainlineKey")
+local MainlineKey = require(path .. "MainlineKey")
 
 function Mainline:new(data, parent)
   local mainline = data
@@ -46,7 +48,7 @@ function Mainline:play()
     nextKey = self.keys[self.curKey]
   end
 
-  timer.performWithDelay(nextKey.duration * self.parent.speed, function()
+  timer.performWithDelay(nextKey.duration / self.parent.speed, function()
     self:play()
   end)
 end

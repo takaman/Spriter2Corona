@@ -1,7 +1,9 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local Animation = {}
 
-local Timeline = require("S2C.Timeline")
-local Mainline = require("S2C.Mainline")
+local Timeline = require(path .. "Timeline")
+local Mainline = require(path .. "Mainline")
 
 function Animation:new(data, parent)
   local animation = data

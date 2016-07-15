@@ -1,6 +1,8 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local Timeline = {}
 
-local TimelineKey = require("S2C.TimelineKey")
+local TimelineKey = require(path .. "TimelineKey")
 
 function Timeline:new(data, parent)
   local timeline = data
@@ -59,18 +61,6 @@ end
 function Timeline:play()
   self.playing = true
 
-  self:next()
-end
-
-function Timeline:show()
-  self.image.isVisible = true
-end
-
-function Timeline:hide()
-  self.image.isVisible = false
-end
-
-function Timeline:next()
   self.curKey = self.curKey + 1
 
   if(self.curKey > #self.keys)then
@@ -78,6 +68,14 @@ function Timeline:next()
   end
 
   self.keys[self.curKey]:play()
+end
+
+function Timeline:stop()
+  self.keys[self.curKey]:stop()
+end
+
+function Timeline:show()
+  self.image.isVisible = true
 end
 
 function Timeline:hide()

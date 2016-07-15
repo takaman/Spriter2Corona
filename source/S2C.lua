@@ -1,8 +1,10 @@
+local path = string.sub(..., 0, string.find(..., "%.[^%.]*$"))
+
 local S2C = {}
 
 local json = require("json")
-local Folder = require("S2C.Folder")
-local Entity = require("S2C.Entity")
+local Folder = require(path .. "Folder")
+local Entity = require(path .. "Entity")
 
 function S2C:new(filename)
   local filename = system.pathForFile(filename, system.ResourceDirectory)
@@ -38,6 +40,14 @@ function S2C:findFolderById(id)
   for index, folder in pairs(self.folders) do
     if(folder.id == id)then
       return folder
+    end
+  end
+end
+
+function S2C:findEntityByName(name)
+  for index, entity in pairs(self.entities) do
+    if(entity.name == name)then
+      return entity
     end
   end
 end
