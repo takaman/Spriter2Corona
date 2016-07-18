@@ -1,16 +1,20 @@
 Folder = {
 
-  new = function(self, data)
+  new = function(self, data, parent)
     local folder = data
 
     setmetatable(folder, {__index = self})
 
-    folder.files = {}
+    folder.parent = parent
 
-    for index, value in pairs(folder.file) do
-      local file = File:new(value)
+    if(folder.file)then
+      folder.files = {}
 
-      table.insert(folder.files, file)
+      for index, value in pairs(folder.file) do
+        local file = File:new(value, folder, folder.parent)
+
+        table.insert(folder.files, file)
+      end
     end
 
     return folder

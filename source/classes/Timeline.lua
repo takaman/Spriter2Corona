@@ -9,43 +9,36 @@ Timeline = {
     timeline.base    = base
     timeline.playing = false
     timeline.curKey  = 0
-    timeline.keys    = {}
 
-    for index, value in pairs(timeline.key) do
-      local previousTimelineKey = timeline.key[index - 1] or timeline.key[#timeline.key]
+    if(timeline.key)then
+      timeline.keys    = {}
 
-      local timelineKey = TimelineKey:new(value, timeline, timeline.base, previousTimelineKey)
+      for index, value in pairs(timeline.key) do
+        local previousTimelineKey = timeline.key[index - 1] or timeline.key[#timeline.key]
 
-      table.insert(timeline.keys, timelineKey)
+        local timelineKey = TimelineKey:new(value, timeline, timeline.base, previousTimelineKey)
+
+        table.insert(timeline.keys, timelineKey)
+      end
     end
 
     return timeline
   end,
 
-  findTimelineKeyById = function(self, id)
-    for index, timelineKey in pairs(self.keys) do
-      if(timelineKey.id == id)then
-        return timelineKey
-      end
-    end
-  end,
-
   create = function(self)
     local timelineKey = self.keys[1]
 
-    self.image = display.newImage(self.parent.group, timelineKey.object.file.name)
+    if(timelineKey.object)then
+      self.image = display.newImage(timelineKey.object.file.name)
+
+      -- TODO: correct the z-index warning
+
+      self.parent.group:insert(self.zIndex, self.image)
+    end
 
     timelineKey:create()
 
-    self:hide()
-  end,
-
-  show = function(self)
-    self.image.isVisible = true
-  end,
-
-  hide = function(self)
-    self.image.isVisible = false
+    -- self:hide()
   end,
 
   play = function(self)
@@ -62,16 +55,28 @@ Timeline = {
     self.keys[self.curKey]:play()
   end,
 
+  show = function(self)
+    if(self.image)then
+      self.image.isVisible = true
+    end
+  end,
+
+  hide = function(self)
+    if(self.image)then
+      self.image.isVisible = false
+    end
+  end,
+
   getAnimationSpeed = function(self)
     return self.parent.speed
   end,
 
   getAnimationLength = function(self)
     return self.parent.length
+  end,
+
+  findTimelineKeyById = function(self, id)
+    return findBy(self.keys, "id", id)
   end
 
 }
-
--- function Timeline:stop()
---   self.keys[self.curKey]:stop()
--- end

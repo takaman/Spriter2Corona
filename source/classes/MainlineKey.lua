@@ -5,8 +5,8 @@ MainlineKey = {
 
     setmetatable(mainlineKey, {__index = self})
 
-    mainlineKey.parent     = parent
-    mainlineKey.time       = mainlineKey.time or 0
+    mainlineKey.parent = parent
+    mainlineKey.time   = mainlineKey.time or 0
 
     if(mainlineKey.id == 0)then
       mainlineKey.duration = mainlineKey.parent.length

@@ -10,6 +10,9 @@ Ref = {
     local timelineId = tonumber(ref.timeline)
 
     ref.timeline = ref.parent.parent:findTimelineById(timelineId)
+    ref.timeline.zIndex = ref.z_index or 0
+    ref.timeline.zIndex = ref.timeline.zIndex + 1
+
     ref.key = ref.timeline:findTimelineKeyById(ref.key)
 
     return ref

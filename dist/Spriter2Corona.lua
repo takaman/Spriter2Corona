@@ -21,77 +21,82 @@ Animation = {
 
     setmetatable(animation, {__index = self})
 
-    animation.parent       = parent
-    animation.base         = base
-    animation.curKey       = 0
-    animation.timelines    = {}
-    animation.mainlineKeys = {}
+    animation.parent             = parent
+    animation.base               = base
+    animation.currentMainlineKey = 0
+    animation.speed              = 100
 
-    animation:setSpeed(1)
+    if(animation.timeline)then
+      animation.timelines = {}
 
-    for index, value in pairs(animation.timeline) do
-      local timeline = Timeline:new(value, animation, animation.base)
+      for index, value in pairs(animation.timeline) do
+        local timeline = Timeline:new(value, animation, animation.base)
 
-      table.insert(animation.timelines, timeline)
+        table.insert(animation.timelines, timeline)
+      end
     end
 
-    local mainlineKeys = animation.mainline.key
+    if(animation.mainline and animation.mainline.key)then
+      animation.mainlineKeys = {}
 
-    for index, value in pairs(mainlineKeys) do
-      local previousMainlineKey = mainlineKeys[index - 1] or mainlineKeys[#mainlineKeys]
+      for index, value in pairs(animation.mainline.key) do
+        local previousMainlineKey = animation.mainline.key[index - 1] or animation.mainline.key[#animation.mainline.key]
 
-      local mainlineKey = MainlineKey:new(value, animation, previousMainlineKey)
+        local mainlineKey = MainlineKey:new(value, animation, previousMainlineKey)
 
-      table.insert(animation.mainlineKeys, mainlineKey)
+        table.insert(animation.mainlineKeys, mainlineKey)
+      end
     end
 
     return animation
   end,
 
-  findTimelineById = function(self, id)
-    return findBy(self.timelines, "id", id)
-  end,
-
-  setSpeed = function(self, speed)
-    self.speed = tonumber(speed)
-  end,
-
-  getDisplayObject = function(self)
-    return self.group
-  end,
-
-  play = function(self)
-    collectgarbage()
-
-    self:create()
-
-    -- TODO: make the starting delay if first mainlineKey is not on time 0
-
-    self.curKey = self.curKey + 1
-
-    self.mainlineKeys[self.curKey]:play()
-
-    local nextMainlineKey = self.mainlineKeys[self.curKey + 1]
-
-    if(not nextMainlineKey)then
-      nextMainlineKey = self.mainlineKeys[1]
-
-      self.curKey = 0
-    end
-
-    timer.performWithDelay(nextMainlineKey.duration / self.speed, function()
-      self:play()
-    end)
-  end,
-
   create = function(self)
-    if(not self.group)then
+    if(not self.group and self.timelines)then
       self.group = display.newGroup()
 
       for index, timeline in pairs(self.timelines) do
         timeline:create()
       end
     end
+  end,
+
+  play = function(self)
+    self:create()
+
+    self:playNextMainlineKey()
+  end,
+
+  playNextMainlineKey = function()
+    collectgarbage()
+
+    self.currentMainlineKey = self.currentMainlineKey + 1
+
+    self.mainlineKeys[self.currentMainlineKey]:play()
+
+    local nextMainlineKey = self.mainlineKeys[self.currentMainlineKey + 1]
+
+    if(nextMainlineKey)then
+      timer.performWithDelay(nextMainlineKey.duration * self.speed / 100, function()
+        self:playNextMainlineKey()
+      end)
+    end
+  end,
+
+  setSpeed = function(self, speed)
+    if(speed)then
+      speed = tonumber(speed) or 100
+
+      self.speed = tonumber(speed)
+    end
+  end,
+
+  getDisplayObject = function(self)
+    return self.group
+  end,
+
+  findTimelineById = function(self, id)
+    return findBy(self.timelines, "id", id)
   end
 
 }
@@ -123,11 +128,14 @@ Entity = {
 
 File = {
 
-  new = function(self, data)
+  new = function(self, data, parent, base)
     local file = data
 
     setmetatable(file, {__index = self})
 
+    file.parent  = parent
+    file.base    = base
+    file.name    = base.path .. file.name
     file.pivot_y = (file.pivot_y - 1) * -1
 
     return file
@@ -137,17 +145,21 @@ File = {
 
 Folder = {
 
-  new = function(self, data)
+  new = function(self, data, parent)
     local folder = data
 
     setmetatable(folder, {__index = self})
 
-    folder.files = {}
+    folder.parent = parent
 
-    for index, value in pairs(folder.file) do
-      local file = File:new(value)
+    if(folder.file)then
+      folder.files = {}
 
-      table.insert(folder.files, file)
+      for index, value in pairs(folder.file) do
+        local file = File:new(value, folder, folder.parent)
+
+        table.insert(folder.files, file)
+      end
     end
 
     return folder
@@ -166,8 +178,8 @@ MainlineKey = {
 
     setmetatable(mainlineKey, {__index = self})
 
-    mainlineKey.parent     = parent
-    mainlineKey.time       = mainlineKey.time or 0
+    mainlineKey.parent = parent
+    mainlineKey.time   = mainlineKey.time or 0
 
     if(mainlineKey.id == 0)then
       mainlineKey.duration = mainlineKey.parent.length
@@ -235,6 +247,9 @@ Ref = {
     local timelineId = tonumber(ref.timeline)
 
     ref.timeline = ref.parent.parent:findTimelineById(timelineId)
+    ref.timeline.zIndex = ref.z_index or 0
+    ref.timeline.zIndex = ref.timeline.zIndex + 1
+
     ref.key = ref.timeline:findTimelineKeyById(ref.key)
 
     return ref
@@ -259,24 +274,24 @@ Ref = {
 
 SpriteTimelineKey = {
 
-  new = function(self, data, parent, base, previousSpriteTimelineKey)
+  new = function(self, data, parent, base, previousTimelineKey)
     local spriteTimelineKey = data
 
     setmetatable(spriteTimelineKey, {__index = self})
 
     spriteTimelineKey.parent  = parent
     spriteTimelineKey.base    = base
-    spriteTimelineKey.y       = spriteTimelineKey.y * -1
+    spriteTimelineKey.y       = (spriteTimelineKey.y or 0) * -1
     spriteTimelineKey.scale_x = spriteTimelineKey.scale_x or 1
     spriteTimelineKey.scale_y = spriteTimelineKey.scale_y or 1
     spriteTimelineKey.folder  = spriteTimelineKey.base:findFolderById(spriteTimelineKey.folder)
     spriteTimelineKey.file    = spriteTimelineKey.folder:findFileById(spriteTimelineKey.file)
     spriteTimelineKey.angle   = spriteTimelineKey.angle or 0
 
-    local clockwise = - 1
+    local clockwise = 1
 
-    if(previousSpriteTimelineKey.spin == -1)then
-      clockwise = 1
+    if(previousTimelineKey.spin == -1)then
+      clockwise = -1
     end
 
     spriteTimelineKey.angle = (360 - spriteTimelineKey.angle) * clockwise
@@ -294,7 +309,9 @@ SpriterObject = {
   --]]
   new = function(self, filename)
     if(filename)then
+      local path     = filename:sub(0, filename:find("%/[^%/]*$"))
       local filename = system.pathForFile(filename, system.ResourceDirectory)
+
       local data, errorPosition, errorMessage = json.decodeFile(filename)
 
       if(data)then
@@ -302,19 +319,26 @@ SpriterObject = {
 
         setmetatable(spriterObject, {__index = self})
 
-        spriterObject.folders  = {}
-        spriterObject.entities = {}
+        spriterObject.path = path
 
-        for index, value in pairs(data.folder) do
-          local folder = Folder:new(value)
+        if(data.folder)then
+          spriterObject.folders = {}
 
-          table.insert(spriterObject.folders, folder)
+          for index, value in pairs(data.folder) do
+            local folder = Folder:new(value, spriterObject)
+
+            table.insert(spriterObject.folders, folder)
+          end
         end
 
-        for index, value in pairs(data.entity) do
-          local entity = Entity:new(value, spriterObject)
+        if(data.entity)then
+          spriterObject.entities = {}
 
-          table.insert(spriterObject.entities, entity)
+          for index, value in pairs(data.entity) do
+            local entity = Entity:new(value, spriterObject)
+
+            table.insert(spriterObject.entities, entity)
+          end
         end
 
         return spriterObject
@@ -349,43 +373,36 @@ Timeline = {
     timeline.base    = base
     timeline.playing = false
     timeline.curKey  = 0
-    timeline.keys    = {}
 
-    for index, value in pairs(timeline.key) do
-      local previousTimelineKey = timeline.key[index - 1] or timeline.key[#timeline.key]
+    if(timeline.key)then
+      timeline.keys    = {}
 
-      local timelineKey = TimelineKey:new(value, timeline, timeline.base, previousTimelineKey)
+      for index, value in pairs(timeline.key) do
+        local previousTimelineKey = timeline.key[index - 1] or timeline.key[#timeline.key]
 
-      table.insert(timeline.keys, timelineKey)
+        local timelineKey = TimelineKey:new(value, timeline, timeline.base, previousTimelineKey)
+
+        table.insert(timeline.keys, timelineKey)
+      end
     end
 
     return timeline
   end,
 
-  findTimelineKeyById = function(self, id)
-    for index, timelineKey in pairs(self.keys) do
-      if(timelineKey.id == id)then
-        return timelineKey
-      end
-    end
-  end,
-
   create = function(self)
     local timelineKey = self.keys[1]
 
-    self.image = display.newImage(self.parent.group, timelineKey.object.file.name)
+    if(timelineKey.object)then
+      self.image = display.newImage(timelineKey.object.file.name)
+
+      -- TODO: correct the z-index warning
+
+      self.parent.group:insert(self.zIndex, self.image)
+    end
 
     timelineKey:create()
 
-    self:hide()
-  end,
-
-  show = function(self)
-    self.image.isVisible = true
-  end,
-
-  hide = function(self)
-    self.image.isVisible = false
+    -- self:hide()
   end,
 
   play = function(self)
@@ -402,19 +419,31 @@ Timeline = {
     self.keys[self.curKey]:play()
   end,
 
+  show = function(self)
+    if(self.image)then
+      self.image.isVisible = true
+    end
+  end,
+
+  hide = function(self)
+    if(self.image)then
+      self.image.isVisible = false
+    end
+  end,
+
   getAnimationSpeed = function(self)
     return self.parent.speed
   end,
 
   getAnimationLength = function(self)
     return self.parent.length
+  end,
+
+  findTimelineKeyById = function(self, id)
+    return findBy(self.keys, "id", id)
   end
 
 }
-
--- function Timeline:stop()
---   self.keys[self.curKey]:stop()
--- end
 
 TimelineKey = {
 
@@ -429,7 +458,7 @@ TimelineKey = {
     timelineKey.spin   = timelineKey.spin or 0
 
     if(timelineKey.object)then
-      timelineKey.object = SpriteTimelineKey:new(timelineKey.object, timelineKey, timelineKey.base, previousTimelineKey.object)
+      timelineKey.object = SpriteTimelineKey:new(timelineKey.object, timelineKey, timelineKey.base, previousTimelineKey)
     end
 
     if(timelineKey.id == 0)then
@@ -470,30 +499,26 @@ TimelineKey = {
 
     local nextKey = timelineKeys[self.parent.curKey + 1] or timelineKeys[1]
 
-    self.transition = transition.to(self.parent.image, {
-      time = nextKey.duration / self.parent:getAnimationSpeed(),
+    if(nextKey.id ~= self.id)then
+      transition.to(self.parent.image, {
+        time = nextKey.duration * self.parent:getAnimationSpeed() / 100,
 
-      x = nextKey.object.x,
-      y = nextKey.object.y,
+        x = nextKey.object.x,
+        y = nextKey.object.y,
 
-      xScale = nextKey.object.scale_x,
-      yScale = nextKey.object.scale_y,
+        xScale = nextKey.object.scale_x,
+        yScale = nextKey.object.scale_y,
 
-      rotation = nextKey.object.angle,
+        rotation = nextKey.object.angle,
 
-      onComplete = function()
-        self.parent:play()
-      end
-    })
+        onComplete = function()
+          self.parent:play()
+        end
+      })
+    end
   end
 
 }
-
--- function TimelineKey:stop()
---   transition.cancel(self.transition)
---
--- --  self.transition:pause()
--- end
 
 -- this is the last file compiled in plugin, to return the main object
 return SpriterObject

@@ -11,7 +11,7 @@ TimelineKey = {
     timelineKey.spin   = timelineKey.spin or 0
 
     if(timelineKey.object)then
-      timelineKey.object = SpriteTimelineKey:new(timelineKey.object, timelineKey, timelineKey.base, previousTimelineKey.object)
+      timelineKey.object = SpriteTimelineKey:new(timelineKey.object, timelineKey, timelineKey.base, previousTimelineKey)
     end
 
     if(timelineKey.id == 0)then
@@ -52,27 +52,23 @@ TimelineKey = {
 
     local nextKey = timelineKeys[self.parent.curKey + 1] or timelineKeys[1]
 
-    self.transition = transition.to(self.parent.image, {
-      time = nextKey.duration / self.parent:getAnimationSpeed(),
+    if(nextKey.id ~= self.id)then
+      transition.to(self.parent.image, {
+        time = nextKey.duration * self.parent:getAnimationSpeed() / 100,
 
-      x = nextKey.object.x,
-      y = nextKey.object.y,
+        x = nextKey.object.x,
+        y = nextKey.object.y,
 
-      xScale = nextKey.object.scale_x,
-      yScale = nextKey.object.scale_y,
+        xScale = nextKey.object.scale_x,
+        yScale = nextKey.object.scale_y,
 
-      rotation = nextKey.object.angle,
+        rotation = nextKey.object.angle,
 
-      onComplete = function()
-        self.parent:play()
-      end
-    })
+        onComplete = function()
+          self.parent:play()
+        end
+      })
+    end
   end
 
 }
-
--- function TimelineKey:stop()
---   transition.cancel(self.transition)
---
--- --  self.transition:pause()
--- end
