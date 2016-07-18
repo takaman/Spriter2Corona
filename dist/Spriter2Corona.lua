@@ -101,6 +101,35 @@ Animation = {
 
 }
 
+BoneTimelineKey = {
+
+  new = function(self, data, parent, base, previousTimelineKey)
+    local boneTimelineKey = data
+
+    setmetatable(boneTimelineKey, {__index = self})
+
+    boneTimelineKey.parent  = parent
+    boneTimelineKey.base    = base
+    boneTimelineKey.y       = (boneTimelineKey.y or 0) * -1
+    boneTimelineKey.scale_x = boneTimelineKey.scale_x or 1
+    boneTimelineKey.scale_y = boneTimelineKey.scale_y or 1
+    boneTimelineKey.folder  = boneTimelineKey.base:findFolderById(boneTimelineKey.folder)
+    boneTimelineKey.file    = boneTimelineKey.folder:findFileById(boneTimelineKey.file)
+    boneTimelineKey.angle   = boneTimelineKey.angle or 0
+
+    local clockwise = 1
+
+    if(previousTimelineKey.spin == -1)then
+      clockwise = -1
+    end
+
+    boneTimelineKey.angle = (360 - boneTimelineKey.angle) * clockwise
+
+    return boneTimelineKey
+  end
+
+}
+
 Entity = {
 
   new = function(self, data, parent)
@@ -395,9 +424,23 @@ Timeline = {
     if(timelineKey.object)then
       self.image = display.newImage(timelineKey.object.file.name)
 
-      -- TODO: correct the z-index warning
+      self.image.base = self
 
-      self.parent.group:insert(self.zIndex, self.image)
+      local zIndex = math.min(self.zIndex, self.parent.group.numChildren + 1)
+
+      if(self.parent.group[zIndex])then
+        for i = zIndex, 1, -1 do
+          local zIndexImage = self.parent.group[i]
+
+          if(self.zIndex > zIndexImage.base.zIndex)then
+            zIndex = i + 1
+
+            break
+          end
+        end
+      end
+
+      self.parent.group:insert(zIndex, self.image)
     end
 
     timelineKey:create()

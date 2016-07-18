@@ -31,9 +31,23 @@ Timeline = {
     if(timelineKey.object)then
       self.image = display.newImage(timelineKey.object.file.name)
 
-      -- TODO: correct the z-index warning
+      self.image.base = self
 
-      self.parent.group:insert(self.zIndex, self.image)
+      local zIndex = math.min(self.zIndex, self.parent.group.numChildren + 1)
+
+      if(self.parent.group[zIndex])then
+        for i = zIndex, 1, -1 do
+          local zIndexImage = self.parent.group[i]
+
+          if(self.zIndex > zIndexImage.base.zIndex)then
+            zIndex = i + 1
+
+            break
+          end
+        end
+      end
+
+      self.parent.group:insert(zIndex, self.image)
     end
 
     timelineKey:create()
