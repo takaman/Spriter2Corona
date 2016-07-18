@@ -8,7 +8,7 @@ A Corona SDK plugin to use Spriter based animations.
 
 
 A simple structure of the exported Spriter data.
-![Spriter exported data](https://raw.githubusercontent.com/Liberton/Spriter2Corona/master/docs/images/spriter_data_example.jpg)
+![Spriter exported data](https://raw.githubusercontent.com/Liberton/Spriter2Corona/master/docs/images/spriter_data_example.png)
 
 
 References:
