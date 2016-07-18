@@ -9,22 +9,22 @@ print(" \n \n \n ")
 local S2C = require("dist.Spriter2Corona")
 
 -- create a S2C instance passing the *.scon file path
-local s2c = S2C:new("spriter.scon")
+local s2c = S2C:new("GreyGuy/player.scon")
 
 if(s2c)then
   -- find the entity by name
-  local entity = s2c:findEntityByName("Character")
+  local entity = s2c:findEntityByName("Player")
 
   if(entity)then
     -- find the animation by name
-    local animation = entity:findAnimationByName("NewAnimation")
+    local animation = entity:findAnimationByName("walk")
 
     if(animation)then
-      -- default speed is 1, - is lower, + is faster
-      animation:setSpeed(1)
+      -- default speed is 100 (%)
+      animation:setSpeed(50)
 
       -- play the animation
-      animation:play()
+      animation:create()
 
       -- modify the animation DisplayObject
       local displayObj = animation:getDisplayObject()
@@ -41,17 +41,22 @@ end
 --[[
 
 SpriterObject
-
-  Folder
-    File
+  - findEntityByName
 
   Entity
-    Animation
-      MainlineKey
-        Ref
+    - findAnimationByName
 
-      Timeline
-        TimelineKey
-          SpriteTimelineKey
+    Animation
+      - create, play, pause, stop, setSpeed
+
+      * MainlineKey
+        * Ref
+
+      * Timeline
+        * TimelineKey
+          * SpriteTimelineKey
+
+  * Folder
+    * File
 
 ]]--
