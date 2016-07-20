@@ -6,7 +6,7 @@ SpriterObject = {
   --]]
   new = function(self, filename)
     if(filename)then
-      local path     = filename:sub(0, filename:find("%/[^%/]*$"))
+      local path = filename:sub(0, filename:find("%/[^%/]*$"))
       local filename = system.pathForFile(filename, system.ResourceDirectory)
 
       local data, errorPosition, errorMessage = json.decodeFile(filename)
@@ -47,6 +47,10 @@ SpriterObject = {
     else
       print("[S2C] 'Filename' is a mandatory parameter")
     end
+  end,
+
+  getPath = function(self)
+    return self.path
   end,
 
   findFolderById = function(self, id)

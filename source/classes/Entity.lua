@@ -1,17 +1,22 @@
 Entity = {
 
-  new = function(self, data, parent)
+  new = function(self, data, spriterObject)
     local entity = data
 
     setmetatable(entity, {__index = self})
 
-    entity.parent     = parent
-    entity.animations = {}
+    entity.spriterObject = spriterObject
 
-    for index, value in pairs(entity.animation) do
-      local animation = Animation:new(value, entity, entity.parent)
+    if(entity.animation)then
+      entity.animations = {}
 
-      table.insert(entity.animations, animation)
+      for index, value in pairs(entity.animation) do
+        local animation = Animation:new(value, entity.spriterObject, entity)
+
+        table.insert(entity.animations, animation)
+
+        animation:normalize()
+      end
     end
 
     return entity

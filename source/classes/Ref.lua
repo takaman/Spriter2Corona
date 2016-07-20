@@ -1,31 +1,65 @@
 Ref = {
 
-  new = function(self, data, parent)
+  new = function(self, data, mainlineKey)
     local ref = data
 
     setmetatable(ref, {__index = self})
 
-    ref.parent = parent
-
-    local timelineId = tonumber(ref.timeline)
-
-    ref.timeline = ref.parent.parent:findTimelineById(timelineId)
-    ref.timeline.zIndex = ref.z_index or 0
-    ref.timeline.zIndex = ref.timeline.zIndex + 1
-
-    ref.key = ref.timeline:findTimelineKeyById(ref.key)
+    ref.mainlineKey = mainlineKey
 
     return ref
+  end,
+
+  normalize = function(self)
+    if(self.z_index)then
+      self.z_index = self.z_index + 1
+    end
+
+    local animation = self.mainlineKey:getAnimation()
+
+    self.timeline = animation:findTimelineById(self.timeline)
+
+    self.key = self.timeline:findTimelineKeyById(self.key)
+
+    if(self.parent)then
+      self.parent = self.mainlineKey:findBoneRefById(self.parent)
+
+      self.parent:setRef(self)
+
+      self.key:setParent(self.parent)
+    end
+
+    self.key:setRef(self)
   end,
 
   play = function(self)
     collectgarbage()
 
-    if(not self.timeline.playing)then
+    if(not self.timeline:isPlaying())then
       self.timeline:play()
     end
 
     self.timeline:show()
+  end,
+
+  setRef = function(self, ref)
+    self.ref = ref
+  end,
+
+  getRef = function(self)
+    return self.ref
+  end,
+
+  getZIndex = function(self)
+    return self.z_index
+  end,
+
+  getTimeline = function(self)
+    return self.timeline
+  end,
+
+  getParent = function(self)
+    return self.parent
   end
 
 }

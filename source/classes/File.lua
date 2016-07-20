@@ -1,16 +1,24 @@
 File = {
 
-  new = function(self, data, parent, base)
+  new = function(self, data, spriterObject, folder)
     local file = data
 
     setmetatable(file, {__index = self})
 
-    file.parent  = parent
-    file.base    = base
-    file.name    = base.path .. file.name
-    file.pivot_y = (file.pivot_y - 1) * -1
+    file.spriterObject = spriterObject
+    file.folder        = folder
 
     return file
+  end,
+
+  normalize = function(self)
+    self.name = self.spriterObject:getPath() .. self.name
+
+    self.pivot_y = (self.pivot_y - 1) * -1
+  end,
+
+  getName = function(self)
+    return self.name
   end
 
 }

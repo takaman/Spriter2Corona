@@ -1,22 +1,18 @@
 Timeline = {
 
-  new = function(self, data, parent, base)
+  new = function(self, data, spriterObject, animation)
     local timeline = data
 
     setmetatable(timeline, {__index = self})
 
-    timeline.parent  = parent
-    timeline.base    = base
-    timeline.playing = false
-    timeline.curKey  = 0
+    timeline.spriterObject = spriterObject
+    timeline.animation     = animation
 
     if(timeline.key)then
-      timeline.keys    = {}
+      timeline.keys = {}
 
       for index, value in pairs(timeline.key) do
-        local previousTimelineKey = timeline.key[index - 1] or timeline.key[#timeline.key]
-
-        local timelineKey = TimelineKey:new(value, timeline, timeline.base, previousTimelineKey)
+        local timelineKey = TimelineKey:new(value, timeline.spriterObject, timeline)
 
         table.insert(timeline.keys, timelineKey)
       end
@@ -25,34 +21,72 @@ Timeline = {
     return timeline
   end,
 
+  normalize = function(self)
+    self.playing = false
+    self.curKey  = 0
+
+    if(self.keys)then
+      for key, timelineKey in pairs(self.keys) do
+        timelineKey:normalize()
+      end
+    end
+  end,
+
   create = function(self)
-    local timelineKey = self.keys[1]
+    if(not self.displayObject)then
+      local timelineKey = self.keys[1]
 
-    if(timelineKey.object)then
-      self.image = display.newImage(timelineKey.object.file.name)
+      if(timelineKey.bone)then
+        self.displayObject = display.newGroup()
 
-      self.image.base = self
+      else
+        self.displayObject = display.newImage(timelineKey.object:getFile():getName())
+      end
 
-      local zIndex = math.min(self.zIndex, self.parent.group.numChildren + 1)
+      self.displayObject.timeline = self
 
-      if(self.parent.group[zIndex])then
-        for i = zIndex, 1, -1 do
-          local zIndexImage = self.parent.group[i]
+      local parentDisplayObject = self.animation:getDisplayObject()
 
-          if(self.zIndex > zIndexImage.base.zIndex)then
-            zIndex = i + 1
+      if(timelineKey.parent)then
+        local parentTimeline = timelineKey.parent:getTimeline()
 
-            break
-          end
+        parentTimeline:create()
+
+        parentDisplayObject = parentTimeline:getDisplayObject()
+      end
+
+      local zIndex = timelineKey.ref:getZIndex() or parentDisplayObject.numChildren + 1
+
+      if(timelineKey.bone)then
+        zIndex = timelineKey.ref.ref:getZIndex()
+      end
+
+      -- TODO: check if is possible to move zIndex to object props
+
+      for i = parentDisplayObject.numChildren, 1, -1 do
+        local parentChildrenDisplayObject = parentDisplayObject[i]
+
+        local parentZIndex = parentChildrenDisplayObject.timeline.keys[1].ref:getZIndex()
+
+        if(not parentZIndex)then
+          parentZIndex = parentChildrenDisplayObject.timeline.keys[1].ref.ref:getZIndex()
+        end
+
+        if(parentZIndex > zIndex)then
+          zIndex = i
+
+          break
         end
       end
 
-      self.parent.group:insert(zIndex, self.image)
+      zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
+
+      parentDisplayObject:insert(zIndex, self.displayObject)
+
+      timelineKey:create()
+
+      -- self:hide()
     end
-
-    timelineKey:create()
-
-    -- self:hide()
   end,
 
   play = function(self)
@@ -70,23 +104,27 @@ Timeline = {
   end,
 
   show = function(self)
-    if(self.image)then
-      self.image.isVisible = true
-    end
+    self.displayObject.isVisible = true
   end,
 
   hide = function(self)
-    if(self.image)then
-      self.image.isVisible = false
-    end
+    self.displayObject.isVisible = false
   end,
 
-  getAnimationSpeed = function(self)
-    return self.parent.speed
+  getAnimation = function(self)
+    return self.animation
   end,
 
-  getAnimationLength = function(self)
-    return self.parent.length
+  getLastTimelineKey = function(self)
+    return self.keys[#self.keys]
+  end,
+
+  getDisplayObject = function(self)
+    return self.displayObject
+  end,
+
+  isPlaying = function(self)
+    return self.playing
   end,
 
   findTimelineKeyById = function(self, id)
