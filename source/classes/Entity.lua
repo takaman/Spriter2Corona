@@ -11,7 +11,7 @@ Entity = {
       entity.animations = {}
 
       for index, value in pairs(entity.animation) do
-        local animation = Animation:new(value, entity.spriterObject, entity)
+        local animation = Animation:new(value, spriterObject, entity)
 
         table.insert(entity.animations, animation)
 

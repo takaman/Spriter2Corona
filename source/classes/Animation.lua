@@ -12,7 +12,7 @@ Animation = {
       animation.timelines = {}
 
       for index, value in pairs(animation.timeline) do
-        local timeline = Timeline:new(value, animation.spriterObject, animation)
+        local timeline = Timeline:new(value, spriterObject, animation)
 
         table.insert(animation.timelines, timeline)
       end
@@ -25,8 +25,6 @@ Animation = {
         local mainlineKey = MainlineKey:new(value, animation)
 
         table.insert(animation.mainlineKeys, mainlineKey)
-
-        mainlineKey:normalize()
       end
     end
 
@@ -37,22 +35,22 @@ Animation = {
     self.currentMainlineKey = 0
     self.speed              = 100
 
-    if(self.timelines)then
-      for index, timeline in pairs(self.timelines) do
-        timeline:normalize()
-      end
+    for index, mainlineKey in pairs(self.mainlineKeys) do
+      mainlineKey:normalize()
+    end
+
+    for index, timeline in pairs(self.timelines) do
+      timeline:normalize()
     end
   end,
 
   create = function(self)
-    if(not self.group and self.timelines)then
-      self.group = display.newGroup()
+    if(not self.displayObject and self.mainlineKeys)then
+      self.displayObject = display.newGroup()
 
-      self.group.animation = self
+      self.displayObject.animation = self
 
-      for index, timeline in pairs(self.timelines) do
-        timeline:create()
-      end
+      self.mainlineKeys[1]:create()
     end
   end,
 
@@ -62,8 +60,8 @@ Animation = {
     self:playNextMainlineKey()
   end,
 
-  playNextMainlineKey = function()
-    collectgarbage()
+  playNextMainlineKey = function(self)
+    -- TODO: make the initial delay when first mainlineKey is not on time zero
 
     self.currentMainlineKey = self.currentMainlineKey + 1
 
@@ -72,7 +70,7 @@ Animation = {
     local nextMainlineKey = self.mainlineKeys[self.currentMainlineKey + 1]
 
     if(nextMainlineKey)then
-      timer.performWithDelay(nextMainlineKey.duration * self.speed / 100, function()
+      timer.performWithDelay(nextMainlineKey.duration * 100 / self.speed, function()
         self:playNextMainlineKey()
       end)
     end
@@ -86,16 +84,12 @@ Animation = {
     end
   end,
 
-  getLength = function(self)
-    return self.length
-  end,
-
   getLastMainlineKey = function(self)
     return self.mainlineKeys[#self.mainlineKeys]
   end,
 
   getDisplayObject = function(self)
-    return self.group
+    return self.displayObject
   end,
 
   findMainlineKeyById = function(self, id)

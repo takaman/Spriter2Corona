@@ -1,9 +1,6 @@
 SpriterObject = {
 
-  --[[
-    filename is a mandatory parameter to create a instance of Spriter Object
-    TODO: for now, it accept only *.scon files
-  --]]
+  -- TODO: for now, it accept only *.scon files
   new = function(self, filename)
     if(filename)then
       local path = filename:sub(0, filename:find("%/[^%/]*$"))
@@ -47,10 +44,6 @@ SpriterObject = {
     else
       print("[S2C] 'Filename' is a mandatory parameter")
     end
-  end,
-
-  getPath = function(self)
-    return self.path
   end,
 
   findFolderById = function(self, id)

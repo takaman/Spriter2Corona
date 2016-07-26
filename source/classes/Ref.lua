@@ -11,60 +11,43 @@ Ref = {
   end,
 
   normalize = function(self)
+    self.timeline = self.mainlineKey.animation:findTimelineById(self.timeline)
+    self.key      = self.timeline:findTimelineKeyById(self.key)
+    self.parent   = self.mainlineKey:findBoneRefById(self.parent)
+
     if(self.z_index)then
       self.z_index = self.z_index + 1
     end
 
-    local animation = self.mainlineKey:getAnimation()
-
-    self.timeline = animation:findTimelineById(self.timeline)
-
-    self.key = self.timeline:findTimelineKeyById(self.key)
-
     if(self.parent)then
-      self.parent = self.mainlineKey:findBoneRefById(self.parent)
-
       self.parent:setRef(self)
-
-      self.key:setParent(self.parent)
     end
 
     self.key:setRef(self)
   end,
 
-  play = function(self)
-    collectgarbage()
+  create = function(self, zIndex)
+    local displayObject = self.mainlineKey.animation:getDisplayObject()
 
-    if(not self.timeline:isPlaying())then
-      self.timeline:play()
+    zIndex = zIndex or self.z_index
+
+    if(self.parent)then
+      self.parent:create(zIndex)
+
+      displayObject = self.parent.timeline:getLastDisplayObject()
     end
 
-    self.timeline:show()
+    self.key:create(displayObject, zIndex)
+  end,
+
+  play = function(self)
+    if(not self.timeline.playing)then
+      self.timeline:play()
+    end
   end,
 
   setRef = function(self, ref)
     self.ref = ref
-  end,
-
-  getRef = function(self)
-    return self.ref
-  end,
-
-  getZIndex = function(self)
-    return self.z_index
-  end,
-
-  getTimeline = function(self)
-    return self.timeline
-  end,
-
-  getParent = function(self)
-    return self.parent
   end
 
 }
-
---
--- function ObjectRef:stop()
---   self.timeline:stop()
--- end

@@ -11,7 +11,7 @@ Folder = {
       folder.files = {}
 
       for index, value in pairs(folder.file) do
-        local file = File:new(value, folder.spriterObject, folder)
+        local file = File:new(value, spriterObject, folder)
 
         table.insert(folder.files, file)
 

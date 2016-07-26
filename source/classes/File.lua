@@ -12,13 +12,9 @@ File = {
   end,
 
   normalize = function(self)
-    self.name = self.spriterObject:getPath() .. self.name
+    self.name = self.spriterObject.path .. self.name
 
     self.pivot_y = (self.pivot_y - 1) * -1
   end,
-
-  getName = function(self)
-    return self.name
-  end
 
 }

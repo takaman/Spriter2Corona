@@ -12,7 +12,7 @@ Timeline = {
       timeline.keys = {}
 
       for index, value in pairs(timeline.key) do
-        local timelineKey = TimelineKey:new(value, timeline.spriterObject, timeline)
+        local timelineKey = TimelineKey:new(value, spriterObject, timeline)
 
         table.insert(timeline.keys, timelineKey)
       end
@@ -22,8 +22,9 @@ Timeline = {
   end,
 
   normalize = function(self)
-    self.playing = false
-    self.curKey  = 0
+    self.playing        = false
+    self.currentKey     = 0
+    self.displayObjects = {}
 
     if(self.keys)then
       for key, timelineKey in pairs(self.keys) do
@@ -32,99 +33,97 @@ Timeline = {
     end
   end,
 
-  create = function(self)
-    if(not self.displayObject)then
-      local timelineKey = self.keys[1]
+  create = function(self, timelineKeyId, parentDisplayObject, zIndex)
+    local timelineKey = self:findTimelineKeyById(timelineKeyId)
 
-      if(timelineKey.bone)then
-        self.displayObject = display.newGroup()
+    local displayObject
 
-      else
-        self.displayObject = display.newImage(timelineKey.object:getFile():getName())
-      end
+    -- TODO: test if this breaks the zIndex
+    zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
 
-      self.displayObject.timeline = self
+    if(timelineKey.bone)then
+      displayObject = display.newGroup()
 
-      local parentDisplayObject = self.animation:getDisplayObject()
+      parentDisplayObject:insert(zIndex, displayObject)
 
-      if(timelineKey.parent)then
-        local parentTimeline = timelineKey.parent:getTimeline()
+    else
+      displayObject = display.newImage(timelineKey.object.file.name)
 
-        parentTimeline:create()
-
-        parentDisplayObject = parentTimeline:getDisplayObject()
-      end
-
-      local zIndex = timelineKey.ref:getZIndex() or parentDisplayObject.numChildren + 1
-
-      if(timelineKey.bone)then
-        zIndex = timelineKey.ref.ref:getZIndex()
-      end
-
-      -- TODO: check if is possible to move zIndex to object props
-
-      for i = parentDisplayObject.numChildren, 1, -1 do
-        local parentChildrenDisplayObject = parentDisplayObject[i]
-
-        local parentZIndex = parentChildrenDisplayObject.timeline.keys[1].ref:getZIndex()
-
-        if(not parentZIndex)then
-          parentZIndex = parentChildrenDisplayObject.timeline.keys[1].ref.ref:getZIndex()
-        end
-
-        if(parentZIndex > zIndex)then
-          zIndex = i
-
-          break
-        end
-      end
-
-      zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
-
-      parentDisplayObject:insert(zIndex, self.displayObject)
-
-      timelineKey:create()
-
-      -- self:hide()
+      parentDisplayObject:insert(zIndex, displayObject)
     end
+
+    displayObject.timeline = self
+
+    table.insert(self.displayObjects, displayObject)
+
+      -- if(timelineKey.bone)then
+      --   self.displayObject = display.newGroup()
+      --
+      -- else
+      --   self.displayObject = display.newImage(timelineKey.object.file.name)
+      -- end
+      --
+      -- self.displayObject.timeline = self
+      --
+      -- local parentDisplayObject = self.animation.displayObject
+      --
+      -- local zIndex = timelineKey.ref.z_index
+
+      -- if(timelineKey.ref.ref)then
+      --   zIndex = timelineKey.ref.ref.z_index:getZIndex()
+      -- end
+
+        -- TODO: check if is possible to move zIndex to object props
+
+        -- ZINDEX recursivo, pegando o maior dos parent, e depois o resto, rs
+
+        -- for i = parentDisplayObject.numChildren, 1, -1 do
+        --   local parentChildrenDisplayObject = parentDisplayObject[i]
+        --
+        --   local parentZIndex = parentChildrenDisplayObject.timeline:findTimelineKeyById(0).ref:getZIndex()
+        --
+        --   if(not parentZIndex)then
+        --     parentZIndex = parentChildrenDisplayObject.timeline:findTimelineKeyById(0).ref.ref:getZIndex()
+        --   end
+        --
+        --   if(parentZIndex > zIndex)then
+        --     zIndex = i
+        --
+        --     break
+        --   end
+        -- end
+
+        -- zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
+        --
+        -- parentDisplayObject:insert(zIndex, self.displayObject)
+        --
+        -- timelineKey:create()
+
+        -- self:hide()
   end,
 
   play = function(self)
-    collectgarbage()
-
     self.playing = true
 
-    self.curKey = self.curKey + 1
+    self:playNextTimelineKey()
+  end,
 
-    if(self.curKey > #self.keys)then
-      self.curKey = 1
+  playNextTimelineKey = function(self)
+    self.currentKey = self.currentKey + 1
+
+    if(self.currentKey > #self.keys)then
+      self.currentKey = 1
     end
 
-    self.keys[self.curKey]:play()
+    self.keys[self.currentKey]:play()
   end,
 
-  show = function(self)
-    self.displayObject.isVisible = true
-  end,
-
-  hide = function(self)
-    self.displayObject.isVisible = false
-  end,
-
-  getAnimation = function(self)
-    return self.animation
+  getLastDisplayObject = function(self)
+    return self.displayObjects[#self.displayObjects]
   end,
 
   getLastTimelineKey = function(self)
     return self.keys[#self.keys]
-  end,
-
-  getDisplayObject = function(self)
-    return self.displayObject
-  end,
-
-  isPlaying = function(self)
-    return self.playing
   end,
 
   findTimelineKeyById = function(self, id)

@@ -30,7 +30,7 @@ Animation = {
       animation.timelines = {}
 
       for index, value in pairs(animation.timeline) do
-        local timeline = Timeline:new(value, animation.spriterObject, animation)
+        local timeline = Timeline:new(value, spriterObject, animation)
 
         table.insert(animation.timelines, timeline)
       end
@@ -43,8 +43,6 @@ Animation = {
         local mainlineKey = MainlineKey:new(value, animation)
 
         table.insert(animation.mainlineKeys, mainlineKey)
-
-        mainlineKey:normalize()
       end
     end
 
@@ -55,22 +53,22 @@ Animation = {
     self.currentMainlineKey = 0
     self.speed              = 100
 
-    if(self.timelines)then
-      for index, timeline in pairs(self.timelines) do
-        timeline:normalize()
-      end
+    for index, mainlineKey in pairs(self.mainlineKeys) do
+      mainlineKey:normalize()
+    end
+
+    for index, timeline in pairs(self.timelines) do
+      timeline:normalize()
     end
   end,
 
   create = function(self)
-    if(not self.group and self.timelines)then
-      self.group = display.newGroup()
+    if(not self.displayObject and self.mainlineKeys)then
+      self.displayObject = display.newGroup()
 
-      self.group.animation = self
+      self.displayObject.animation = self
 
-      for index, timeline in pairs(self.timelines) do
-        timeline:create()
-      end
+      self.mainlineKeys[1]:create()
     end
   end,
 
@@ -80,8 +78,8 @@ Animation = {
     self:playNextMainlineKey()
   end,
 
-  playNextMainlineKey = function()
-    collectgarbage()
+  playNextMainlineKey = function(self)
+    -- TODO: make the initial delay when first mainlineKey is not on time zero
 
     self.currentMainlineKey = self.currentMainlineKey + 1
 
@@ -90,7 +88,7 @@ Animation = {
     local nextMainlineKey = self.mainlineKeys[self.currentMainlineKey + 1]
 
     if(nextMainlineKey)then
-      timer.performWithDelay(nextMainlineKey.duration * self.speed / 100, function()
+      timer.performWithDelay(nextMainlineKey.duration * 100 / self.speed, function()
         self:playNextMainlineKey()
       end)
     end
@@ -104,16 +102,12 @@ Animation = {
     end
   end,
 
-  getLength = function(self)
-    return self.length
-  end,
-
   getLastMainlineKey = function(self)
     return self.mainlineKeys[#self.mainlineKeys]
   end,
 
   getDisplayObject = function(self)
-    return self.group
+    return self.displayObject
   end,
 
   findMainlineKeyById = function(self, id)
@@ -128,29 +122,75 @@ Animation = {
 
 BoneTimelineKey = {
 
-  new = function(self, data, spriterObject, timelineKey)
+  new = function(self, data, timelineKey)
     local boneTimelineKey = data
 
     setmetatable(boneTimelineKey, {__index = self})
 
-    boneTimelineKey.spriterObject = spriterObject
     boneTimelineKey.timelineKey   = timelineKey
+
+    boneTimelineKey.x = boneTimelineKey.x or 0
+    boneTimelineKey.y = - (boneTimelineKey.y or 0)
+
+    boneTimelineKey.scale_x = boneTimelineKey.scale_x or 1
+    boneTimelineKey.scale_y = boneTimelineKey.scale_y or 1
+
+    boneTimelineKey.xScale = boneTimelineKey.scale_x
+    boneTimelineKey.yScale = boneTimelineKey.scale_y
 
     return boneTimelineKey
   end,
 
   normalize = function(self)
-    self.x = self.x or 0
-    self.y = - (self.y or 0)
-
-    self.scale_x = self.scale_x or 1
-    self.scale_y = self.scale_y or 1
-
-    local timeline = self.timelineKey:getTimeline()
-
-    local previousTimelineKey = timeline:findTimelineKeyById(self.timelineKey:getId() - 1) or timeline:getLastTimelineKey()
+    self.x, self.y, self.scale_x, self.scale_y = self:getParameters()
 
     self.angle = - self.angle
+
+    -- self.angle = 360 - self:getRotation()
+  end,
+
+  getRotation = function(self)
+    local angle = self.angle
+
+    local ref = self.timelineKey.ref
+    local parentRef = ref.parent
+
+    if(parentRef)then
+      local parentTimeline = parentRef.timeline
+      local parentTimelineKey = parentTimeline:findTimelineKeyById(self.id) or parentTimeline:getLastTimelineKey()
+
+      local parentAngle = parentTimelineKey.bone:getRotation()
+
+      angle = angle + parentAngle
+    end
+
+    return angle
+  end,
+
+  getParameters = function(self)
+    local x = self.x
+    local y = self.y
+
+    local xScale = self.xScale
+    local yScale = self.yScale
+
+    local ref = self.timelineKey.ref
+    local parentRef = ref.parent
+
+    if(parentRef)then
+      local parentTimeline = parentRef.timeline
+      local parentTimelineKey = parentTimeline:findTimelineKeyById(self.id) or parentTimeline:getLastTimelineKey()
+
+      local parentX, parentY, parentXScale, parentYScale = parentTimelineKey.bone:getParameters()
+
+      x = x * parentXScale
+      y = y * parentYScale
+
+      xScale = xScale * parentXScale
+      yScale = yScale * parentYScale
+    end
+
+    return x, y, xScale, yScale
   end
 
 }
@@ -168,7 +208,7 @@ Entity = {
       entity.animations = {}
 
       for index, value in pairs(entity.animation) do
-        local animation = Animation:new(value, entity.spriterObject, entity)
+        local animation = Animation:new(value, spriterObject, entity)
 
         table.insert(entity.animations, animation)
 
@@ -199,14 +239,10 @@ File = {
   end,
 
   normalize = function(self)
-    self.name = self.spriterObject:getPath() .. self.name
+    self.name = self.spriterObject.path .. self.name
 
     self.pivot_y = (self.pivot_y - 1) * -1
   end,
-
-  getName = function(self)
-    return self.name
-  end
 
 }
 
@@ -223,7 +259,7 @@ Folder = {
       folder.files = {}
 
       for index, value in pairs(folder.file) do
-        local file = File:new(value, folder.spriterObject, folder)
+        local file = File:new(value, spriterObject, folder)
 
         table.insert(folder.files, file)
 
@@ -273,55 +309,41 @@ MainlineKey = {
   end,
 
   normalize = function(self)
-    self.time = self.time or self.animation:getLength()
+    self.time = self.time or 0
 
+    -- TODO: check if this duration is right
     local previousMainlineKey = self.animation:findMainlineKeyById(self.id - 1) or self.animation:getLastMainlineKey()
 
-    self.duration = self.time - previousMainlineKey.time
+    if(self.time == 0)then
+      self.duration = self.animation.length - previousMainlineKey.time
 
-    if(self.boneRefs)then
-      for key, boneRef in pairs(self.boneRefs) do
-        boneRef:normalize()
-      end
+    else
+      self.duration = self.time - previousMainlineKey.time
+    end
 
-      for key, objectRef in pairs(self.objectRefs) do
-        objectRef:normalize()
-      end
+    for key, boneRef in pairs(self.boneRefs) do
+      boneRef:normalize()
+    end
+
+    for key, objectRef in pairs(self.objectRefs) do
+      objectRef:normalize()
+    end
+  end,
+
+  create = function(self)
+    for key, objectRef in pairs(self.objectRefs) do
+      objectRef:create()
     end
   end,
 
   play = function(self)
-    collectgarbage()
-
-    -- local mainlineKeys = self.parent.mainlineKeys
-    -- local nextKey = mainlineKeys[self.parent.curKey + 1] or mainlineKeys[1]
-
-    if(self.objectRefs)then
-      for index, objectRef in pairs(self.objectRefs) do
-        objectRef:play()
-
-        -- local objRefFound = false
-
-        -- for nextIndex, nextObjectRef in pairs(nextKey.objectRefs) do
-        --   if(objectRef.timeline == nextObjectRef.timeline)then
-        --     objRefFound = true
-        --
-        --     break
-        --   end
-        -- end
-
-        -- if(objRefWillHide)then
-        --   objectRef:stop()
-        --
-        -- else
-        --   objectRef:play()
-        -- end
-      end
+    for key, boneRef in pairs(self.boneRefs) do
+      boneRef:play()
     end
-  end,
 
-  getAnimation = function(self)
-    return self.animation
+    for key, objectRef in pairs(self.objectRefs) do
+      objectRef:play()
+    end
   end,
 
   findBoneRefById = function(self, id)
@@ -329,6 +351,31 @@ MainlineKey = {
   end
 
 }
+
+
+
+
+-- local mainlineKeys = self.parent.mainlineKeys
+-- local nextKey = mainlineKeys[self.parent.curKey + 1] or mainlineKeys[1]
+
+-- if(self.objectRefs)then
+  -- local objRefFound = false
+
+  -- for nextIndex, nextObjectRef in pairs(nextKey.objectRefs) do
+  --   if(objectRef.timeline == nextObjectRef.timeline)then
+  --     objRefFound = true
+  --
+  --     break
+  --   end
+  -- end
+
+  -- if(objRefWillHide)then
+  --   objectRef:stop()
+  --
+  -- else
+  --   objectRef:play()
+  -- end
+-- end
 
 Ref = {
 
@@ -343,63 +390,46 @@ Ref = {
   end,
 
   normalize = function(self)
+    self.timeline = self.mainlineKey.animation:findTimelineById(self.timeline)
+    self.key      = self.timeline:findTimelineKeyById(self.key)
+    self.parent   = self.mainlineKey:findBoneRefById(self.parent)
+
     if(self.z_index)then
       self.z_index = self.z_index + 1
     end
 
-    local animation = self.mainlineKey:getAnimation()
-
-    self.timeline = animation:findTimelineById(self.timeline)
-
-    self.key = self.timeline:findTimelineKeyById(self.key)
-
     if(self.parent)then
-      self.parent = self.mainlineKey:findBoneRefById(self.parent)
-
       self.parent:setRef(self)
-
-      self.key:setParent(self.parent)
     end
 
     self.key:setRef(self)
   end,
 
-  play = function(self)
-    collectgarbage()
+  create = function(self, zIndex)
+    local displayObject = self.mainlineKey.animation:getDisplayObject()
 
-    if(not self.timeline:isPlaying())then
-      self.timeline:play()
+    zIndex = zIndex or self.z_index
+
+    if(self.parent)then
+      self.parent:create(zIndex)
+
+      displayObject = self.parent.timeline:getLastDisplayObject()
     end
 
-    self.timeline:show()
+    self.key:create(displayObject, zIndex)
+  end,
+
+  play = function(self)
+    if(not self.timeline.playing)then
+      self.timeline:play()
+    end
   end,
 
   setRef = function(self, ref)
     self.ref = ref
-  end,
-
-  getRef = function(self)
-    return self.ref
-  end,
-
-  getZIndex = function(self)
-    return self.z_index
-  end,
-
-  getTimeline = function(self)
-    return self.timeline
-  end,
-
-  getParent = function(self)
-    return self.parent
   end
 
 }
-
---
--- function ObjectRef:stop()
---   self.timeline:stop()
--- end
 
 SpriteTimelineKey = {
 
@@ -411,38 +441,82 @@ SpriteTimelineKey = {
     spriteTimelineKey.spriterObject = spriterObject
     spriteTimelineKey.timelineKey   = timelineKey
 
+    spriteTimelineKey.x = spriteTimelineKey.x or 0
+    spriteTimelineKey.y = - (spriteTimelineKey.y or 0)
+
+    spriteTimelineKey.scale_x = spriteTimelineKey.scale_x or 1
+    spriteTimelineKey.scale_y = spriteTimelineKey.scale_y or 1
+
+    spriteTimelineKey.xScale = spriteTimelineKey.scale_x
+    spriteTimelineKey.yScale = spriteTimelineKey.scale_y
+
     return spriteTimelineKey
   end,
 
   normalize = function(self)
-    self.x = self.x or 0
-    self.y = - (self.y or 0)
-
-    self.scale_x = self.scale_x or 1
-    self.scale_y = self.scale_y or 1
-
     self.folder = self.spriterObject:findFolderById(self.folder)
     self.file   = self.folder:findFileById(self.file)
 
-    local timeline = self.timelineKey:getTimeline()
+    self.x, self.y, self.scale_x, self.scale_y = self:getParameters()
 
-    local previousTimelineKey = timeline:findTimelineKeyById(self.timelineKey:getId() - 1) or timeline:getLastTimelineKey()
+    if(self.timelineKey.spin == 1)then
+      self.angle = self.angle - 360
+    end
 
     self.angle = - self.angle
+
+    -- self.angle = 360 - self:getRotation()
   end,
 
-  getFile = function(self)
-    return self.file
+  getRotation = function(self)
+    local angle = self.angle
+
+    local ref = self.timelineKey.ref
+    local parentRef = ref.parent
+
+    if(parentRef)then
+      local parentTimeline = parentRef.timeline
+      local parentTimelineKey = parentTimeline:findTimelineKeyById(self.id) or parentTimeline:getLastTimelineKey()
+
+      local parentAngle = parentTimelineKey.bone:getRotation()
+
+      angle = angle + parentAngle
+    end
+
+    return angle
+  end,
+
+  getParameters = function(self)
+    local x = self.x
+    local y = self.y
+
+    local xScale = self.xScale
+    local yScale = self.yScale
+
+    local ref = self.timelineKey.ref
+    local parentRef = ref.parent
+
+    if(parentRef)then
+      local parentTimeline = parentRef.timeline
+      local parentTimelineKey = parentTimeline:findTimelineKeyById(self.id) or parentTimeline:getLastTimelineKey()
+
+      local parentX, parentY, parentXScale, parentYScale = parentTimelineKey.bone:getParameters()
+
+      x = x * parentXScale
+      y = y * parentYScale
+
+      xScale = xScale * parentXScale
+      yScale = yScale * parentYScale
+    end
+
+    return x, y, xScale, yScale
   end
 
 }
 
 SpriterObject = {
 
-  --[[
-    filename is a mandatory parameter to create a instance of Spriter Object
-    TODO: for now, it accept only *.scon files
-  --]]
+  -- TODO: for now, it accept only *.scon files
   new = function(self, filename)
     if(filename)then
       local path = filename:sub(0, filename:find("%/[^%/]*$"))
@@ -488,10 +562,6 @@ SpriterObject = {
     end
   end,
 
-  getPath = function(self)
-    return self.path
-  end,
-
   findFolderById = function(self, id)
     return findBy(self.folders, "id", id)
   end,
@@ -516,7 +586,7 @@ Timeline = {
       timeline.keys = {}
 
       for index, value in pairs(timeline.key) do
-        local timelineKey = TimelineKey:new(value, timeline.spriterObject, timeline)
+        local timelineKey = TimelineKey:new(value, spriterObject, timeline)
 
         table.insert(timeline.keys, timelineKey)
       end
@@ -526,8 +596,9 @@ Timeline = {
   end,
 
   normalize = function(self)
-    self.playing = false
-    self.curKey  = 0
+    self.playing        = false
+    self.currentKey     = 0
+    self.displayObjects = {}
 
     if(self.keys)then
       for key, timelineKey in pairs(self.keys) do
@@ -536,99 +607,97 @@ Timeline = {
     end
   end,
 
-  create = function(self)
-    if(not self.displayObject)then
-      local timelineKey = self.keys[1]
+  create = function(self, timelineKeyId, parentDisplayObject, zIndex)
+    local timelineKey = self:findTimelineKeyById(timelineKeyId)
 
-      if(timelineKey.bone)then
-        self.displayObject = display.newGroup()
+    local displayObject
 
-      else
-        self.displayObject = display.newImage(timelineKey.object:getFile():getName())
-      end
+    -- TODO: test if this breaks the zIndex
+    zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
 
-      self.displayObject.timeline = self
+    if(timelineKey.bone)then
+      displayObject = display.newGroup()
 
-      local parentDisplayObject = self.animation:getDisplayObject()
+      parentDisplayObject:insert(zIndex, displayObject)
 
-      if(timelineKey.parent)then
-        local parentTimeline = timelineKey.parent:getTimeline()
+    else
+      displayObject = display.newImage(timelineKey.object.file.name)
 
-        parentTimeline:create()
-
-        parentDisplayObject = parentTimeline:getDisplayObject()
-      end
-
-      local zIndex = timelineKey.ref:getZIndex() or parentDisplayObject.numChildren + 1
-
-      if(timelineKey.bone)then
-        zIndex = timelineKey.ref.ref:getZIndex()
-      end
-
-      -- TODO: check if is possible to move zIndex to object props
-
-      for i = parentDisplayObject.numChildren, 1, -1 do
-        local parentChildrenDisplayObject = parentDisplayObject[i]
-
-        local parentZIndex = parentChildrenDisplayObject.timeline.keys[1].ref:getZIndex()
-
-        if(not parentZIndex)then
-          parentZIndex = parentChildrenDisplayObject.timeline.keys[1].ref.ref:getZIndex()
-        end
-
-        if(parentZIndex > zIndex)then
-          zIndex = i
-
-          break
-        end
-      end
-
-      zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
-
-      parentDisplayObject:insert(zIndex, self.displayObject)
-
-      timelineKey:create()
-
-      -- self:hide()
+      parentDisplayObject:insert(zIndex, displayObject)
     end
+
+    displayObject.timeline = self
+
+    table.insert(self.displayObjects, displayObject)
+
+      -- if(timelineKey.bone)then
+      --   self.displayObject = display.newGroup()
+      --
+      -- else
+      --   self.displayObject = display.newImage(timelineKey.object.file.name)
+      -- end
+      --
+      -- self.displayObject.timeline = self
+      --
+      -- local parentDisplayObject = self.animation.displayObject
+      --
+      -- local zIndex = timelineKey.ref.z_index
+
+      -- if(timelineKey.ref.ref)then
+      --   zIndex = timelineKey.ref.ref.z_index:getZIndex()
+      -- end
+
+        -- TODO: check if is possible to move zIndex to object props
+
+        -- ZINDEX recursivo, pegando o maior dos parent, e depois o resto, rs
+
+        -- for i = parentDisplayObject.numChildren, 1, -1 do
+        --   local parentChildrenDisplayObject = parentDisplayObject[i]
+        --
+        --   local parentZIndex = parentChildrenDisplayObject.timeline:findTimelineKeyById(0).ref:getZIndex()
+        --
+        --   if(not parentZIndex)then
+        --     parentZIndex = parentChildrenDisplayObject.timeline:findTimelineKeyById(0).ref.ref:getZIndex()
+        --   end
+        --
+        --   if(parentZIndex > zIndex)then
+        --     zIndex = i
+        --
+        --     break
+        --   end
+        -- end
+
+        -- zIndex = math.min(zIndex, parentDisplayObject.numChildren + 1)
+        --
+        -- parentDisplayObject:insert(zIndex, self.displayObject)
+        --
+        -- timelineKey:create()
+
+        -- self:hide()
   end,
 
   play = function(self)
-    collectgarbage()
-
     self.playing = true
 
-    self.curKey = self.curKey + 1
+    self:playNextTimelineKey()
+  end,
 
-    if(self.curKey > #self.keys)then
-      self.curKey = 1
+  playNextTimelineKey = function(self)
+    self.currentKey = self.currentKey + 1
+
+    if(self.currentKey > #self.keys)then
+      self.currentKey = 1
     end
 
-    self.keys[self.curKey]:play()
+    self.keys[self.currentKey]:play()
   end,
 
-  show = function(self)
-    self.displayObject.isVisible = true
-  end,
-
-  hide = function(self)
-    self.displayObject.isVisible = false
-  end,
-
-  getAnimation = function(self)
-    return self.animation
+  getLastDisplayObject = function(self)
+    return self.displayObjects[#self.displayObjects]
   end,
 
   getLastTimelineKey = function(self)
     return self.keys[#self.keys]
-  end,
-
-  getDisplayObject = function(self)
-    return self.displayObject
-  end,
-
-  isPlaying = function(self)
-    return self.playing
   end,
 
   findTimelineKeyById = function(self, id)
@@ -648,28 +717,29 @@ TimelineKey = {
     timelineKey.timeline      = timeline
 
     if(timelineKey.bone)then
-      timelineKey.bone = BoneTimelineKey:new(timelineKey.bone, timelineKey.spriterObject, timelineKey)
+      timelineKey.bone = BoneTimelineKey:new(timelineKey.bone, timelineKey)
     end
 
     if(timelineKey.object)then
-      timelineKey.object = SpriteTimelineKey:new(timelineKey.object, timelineKey.spriterObject, timelineKey)
+      timelineKey.object = SpriteTimelineKey:new(timelineKey.object, spriterObject, timelineKey)
     end
 
     return timelineKey
   end,
 
   normalize = function(self)
-    self.time = self.time or self.timeline:getAnimation():getLength()
+    self.time = self.time or 0
 
     local previousTimelineKey = self.timeline:findTimelineKeyById(self.id - 1) or self.timeline:getLastTimelineKey()
 
-    self.duration = self.time - previousTimelineKey.time
+    if(self.time == 0)then
+      self.duration = self.timeline.animation.length - previousTimelineKey.time
+
+    else
+      self.duration = self.time - previousTimelineKey.time
+    end
 
     self.spin = self.spin or 1
-
-    if(self.spin == 0)then
-      self.spin = 1
-    end
 
     if(self.bone)then
       self.bone:normalize()
@@ -680,98 +750,90 @@ TimelineKey = {
     end
   end,
 
-  create = function(self)
-    local displayObject = self.timeline:getDisplayObject()
+  create = function(self, displayObject, zIndex)
+    self.timeline:create(self.id, displayObject, zIndex)
+
+    local displayObject = self.timeline:getLastDisplayObject()
 
     local parameters = self.object or self.bone
 
+    displayObject.x = parameters.x
+    displayObject.y = parameters.y
+
     displayObject.rotation = parameters.angle
 
-    local x = parameters.x
-    local y = parameters.y
-
-    local xScale = parameters.scale_x
-    local yScale = parameters.scale_y
-
     if(self.object)then
-      displayObject.anchorX = self.object:getFile().pivot_x
-      displayObject.anchorY = self.object:getFile().pivot_y
+      displayObject.xScale = parameters.scale_x
+      displayObject.yScale = parameters.scale_y
+
+      displayObject.anchorX = self.object.file.pivot_x
+      displayObject.anchorY = self.object.file.pivot_y
     end
-
-    local ref = self:getRef()
-
-    if(ref)then
-      local parentRef = ref:getParent()
-
-      while ref and parentRef do
-        local parentTimeline = parentRef:getTimeline()
-
-        xScale = xScale * parentTimeline.keys[1].bone.scale_x
-        yScale = yScale * parentTimeline.keys[1].bone.scale_y
-
-        x = x * parentTimeline.keys[1].bone.scale_x
-        y = y * parentTimeline.keys[1].bone.scale_y
-
-        ref = parentTimeline.keys[1]:getRef()
-        parentRef = ref:getParent()
-      end
-    end
-
-    if(self.object)then
-      displayObject.xScale = xScale
-      displayObject.yScale = yScale
-    end
-
-    displayObject.x = x
-    displayObject.y = y
   end,
 
   play = function(self)
-    -- collectgarbage()
-    --
-    -- self:create()
-    --
-    -- local timelineKeys = self.timeline.keys
-    --
-    -- local nextKey = timelineKeys[self.timeline.curKey + 1] or timelineKeys[1]
-    --
-    -- if(nextKey.id ~= self.id)then
-    --   transition.to(self.timeline.image, {
-    --     time = nextKey.duration * self.timeline:getAnimationSpeed() / 100,
-    --
-    --     x = nextKey.object.x,
-    --     y = nextKey.object.y,
-    --
-    --     xScale = nextKey.object.scale_x,
-    --     yScale = nextKey.object.scale_y,
-    --
-    --     rotation = nextKey.object.angle,
-    --
-    --     onComplete = function()
-    --       self.timeline:play()
-    --     end
-    --   })
-    -- end
+    -- TODO: implement the way of start the animation by setting the current key params
+
+    local nextKey = self.timeline:findTimelineKeyById(self.id + 1) or self.timeline:findTimelineKeyById(0)
+
+    local nextParameters = nextKey.bone or nextKey.object
+
+    local xScale = 1
+    local yScale = 1
+
+    if(self.object)then
+      xScale = nextParameters.scale_x
+      yScale = nextParameters.scale_y
+    end
+
+    if(nextKey.id ~= self.id)then
+      local numChildren = 1
+
+      for key, displayObject in pairs(self.timeline.displayObjects) do
+        local parameters = self.object or self.bone
+
+        displayObject.x = parameters.x
+        displayObject.y = parameters.y
+
+        displayObject.rotation = parameters.angle
+
+        if(self.object)then
+          displayObject.xScale = parameters.scale_x
+          displayObject.yScale = parameters.scale_y
+        end
+
+        if(not displayObject.playing)then
+          displayObject.playing = true
+
+          displayObject.transition = transition.to(displayObject, {
+            time = nextKey.duration * 100 / self.timeline.animation.speed,
+
+            rotation = nextParameters.angle,
+
+            x = nextParameters.x,
+            y = nextParameters.y,
+
+            xScale = xScale,
+            yScale = yScale,
+
+            onComplete = function()
+              displayObject.playing = false
+
+              if(numChildren < #self.timeline.displayObjects)then
+                numChildren = numChildren + 1
+
+              else
+                self.timeline:playNextTimelineKey()
+              end
+            end
+          })
+        end
+      end
+    end
   end,
 
   setRef = function(self, ref)
     self.ref = ref
-  end,
-
-  setParent = function(self, parent)
-    self.parent = parent
-  end,
-
-  getId = function(self)
-    return self.id
-  end,
-
-  getTimeline = function(self)
-    return self.timeline
-  end,
-
-  getRef = function(self, ref)
-    return self.ref
   end
 
 }
